@@ -1,0 +1,164 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-root-secret
+type: Opaque
+data:
+  password: cm9vdG15c3Fs
+---
+apiVersion: v1
+metadata:
+  name: mysql-configmap
+kind: ConfigMap
+data:
+  mysql.cnf: |
+    [mysqld]
+    user = mysql
+    bind-address = 0.0.0.0
+    default_storage_engine = innodb
+    binlog_format = row
+    innodb_autoinc_lock_mode = 2
+    innodb_flush_log_at_trx_commit = 0
+    innodb_rollback_on_timeout=1
+    wsrep_log_conflicts=ON
+    innodb_status_output=ON;
+    innodb_status_output_locks=ON;
+    ##############################################
+    query_cache_size = 0
+    query_cache_type = 0
+    sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    innodb_file_per_table=ON
+    ignore-db-dir=lost+found
+
+    ssl-ca=/etc/ssl/certs/ca.pem
+    ssl-cert=/etc/ssl/certs/server-cert.pem
+    ssl-key=/etc/ssl/certs/server-key.pem
+
+    innodb_buffer_pool_size = 10G # (adjust value here, 50%-70% of total RAM)
+    innodb_log_file_size = 256M
+    innodb_flush_log_at_trx_commit = 0
+    innodb_flush_method = O_DIRECT
+    skip-name-resolve
+
+    max_connections = 2000
+
+    #server-id = 1
+    #log_slave_updates = on
+    #log-bin = /var/lib/mysql/master-bin
+    #log-bin-index = /var/lib/mysql/master-bin.index
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-user-secret
+type: Opaque
+data:
+  username: bXlzcWw=
+  password: bXlzcWxhZG1pbg==
+# ---
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: mysql-pvc-nfs
+# spec:
+#   storageClassName: deloitte-nfs
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 5Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: mysql:8.0
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-root-secret
+              key: password
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "no"
+        - name: MYSQL_INITDB_SKIP_TZINFO
+          value: "yes"
+        - name: MYSQL_DATABASE
+          value: mysql
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: mysql-user-secret
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: mysql-user-secret
+        livenessProbe:
+          exec:
+            command:
+            - bash
+            - "-c"
+            - |
+              mysqladmin -uroot -p$MYSQL_ROOT_PASSWORD ping
+          failureThreshold: 3
+          initialDelaySeconds: 300
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          exec:
+            command:
+            - bash
+            - "-c"
+            - |
+              mysql -h127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD -e'SELECT 1'
+          failureThreshold: 3
+          initialDelaySeconds: 30
+          periodSeconds: 1
+          successThreshold: 1
+          timeoutSeconds: 1
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        # - name: mysql-persistent-storage
+        #   mountPath: /var/lib/mysql
+        - name: mysql-configmap-volume
+          mountPath: /etc/mysql/mysql.cnf
+      volumes:
+      # - name: mysql-persistent-storage
+      #   persistentVolumeClaim:
+      #     claimName: mysql-pvc-nfs
+      - name: mysql-configmap-volume
+        configMap:
+          defaultMode: 420
+          items:
+          - key: mysql.cnf
+            path: mysql.cnf
+          name: mysql-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector:
+    app: mysql
+  ports:
+  - port: 3306
+    targetPort: 3306

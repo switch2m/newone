@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rsyslog-deployment
+  namespace: rsyslog
+  labels:
+    app: rsyslog
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rsyslog
+  template:
+    metadata:
+      labels:
+        app: rsyslog
+    spec:
+      containers:
+      - name: rsyslog
+        image: sudheerc1190/rsyslog:latest
+        ports:
+        - containerPort: 514
+        volumeMounts:
+          - name: empty
+            mountPath: "/var/log"
+      volumes:
+        - name: empty
+          emptyDir: {}

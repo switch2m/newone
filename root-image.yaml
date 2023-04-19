@@ -1,0 +1,4 @@
+pingcentral:
+  dev:
+    rootimage: dev-df-docker.cloud.deloitte.fr/iam/pingcentral-poc:v3
+

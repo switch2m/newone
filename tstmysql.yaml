@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: my-statefulset
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: my-container
+          image: mysql
+          volumeMounts:
+            - name: volume-1
+              mountPath: /var/lib/mysql
+            - name: volume-2
+              mountPath: /etc/passwd
+      volumes:
+        - name: mysql
+          persistentVolumeClaim:
+            claimName: pvc-1
+        - name: mysql2
+          persistentVolumeClaim:
+            claimName: pvc-2
+  volumeClaimTemplates:
+    - metadata:
+        name: pvc-1
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+    - metadata:
+        name: pvc-2
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-client
+        resources:
+          requests:
+            storage: 2Gi

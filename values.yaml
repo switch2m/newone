@@ -1,0 +1,31 @@
+# Default values for jenkins.
+# This is a YAML-formatted file.
+# Declare name/value pairs to be passed into your templates.
+# name: value
+
+## Overrides for generated resource names
+# See templates/_helpers.tpl
+# nameOverride:
+# fullnameOverride:
+# namespaceOverride:
+
+# For FQDN resolving of the master service. Change this value to match your existing configuration.
+# ref: https://github.com/kubernetes/dns/blob/master/docs/specification.md
+master:
+  adminPassword: admin
+  resources:
+    limits:
+      cpu: "800m"
+      memory: "2048Mi"
+  serviceType: NodePort
+  nodePort: 32323
+
+persistence:
+  storageClass: "nfs-client"
+  size: "5Gi"
+
+## Install Default RBAC roles and bindings
+rbac:
+  create: true
+  readSecrets: false
+

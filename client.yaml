@@ -1,0 +1,16 @@
+---
+clusterName: "elasticsearch"
+nodeGroup: "client"
+roles:
+  master: "false"
+  ingest: "false"
+  data: "false"
+replicas: 2
+volumeClaimTemplate:
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: "nfs-client"
+  resources:
+    requests:
+      storage: 1Gi
+persistence:
+  enabled: false

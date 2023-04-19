@@ -1,0 +1,13 @@
+- name: install helm
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: install helm
+      command: "{{ item }}"
+      with_items:
+      - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+      - chmod 700 get_helm.sh
+      - ./get_helm.sh
+      - helm version
+      register: helmv
+    - debug: msg={{helmv}}

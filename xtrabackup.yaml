@@ -1,0 +1,39 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup
+spec:
+  schedule: "*/2 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: xtrabackup
+            image: perconalab/percona-xtrabackup:8.0.32-26
+            env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-root-secret
+                  key: password
+            - name: MYSQL_HOST
+              value: mysqldb
+            #args: ["xtrabackup --backup --target-dir=/home --host=$MYSQL_HOST --user=root --password=$MYSQL_ROOT_PASSWORD"]
+            command:
+              - /bin/sh
+              - "-c"
+              - "sleep 3600"
+            #volumeMounts:
+            #- name: mysql
+            #  value: /mnt/sharedfolder/default-mysql-pvc-8cb12b34-8c7d-4ee9-8d32-0f4f4aa0ddb1
+            volumeMounts:
+            - name: mysql
+              mountPath: /var/lib/mysql
+          nodeName: pool-ke6uxkvcp-qd939
+          volumes:
+          - name: mysql
+            persistentVolumeClaim:
+              claimName: test-claim
+          restartPolicy: OnFailure

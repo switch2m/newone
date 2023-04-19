@@ -1,0 +1,22 @@
+---
+clusterName: "elasticsearch"
+nodeGroup: "data"
+roles:
+  master: "false"
+  ingest: "true"
+  data: "true"
+replicas: 3
+resources:
+  requests:
+    cpu: "100m"
+    memory: "2Gi"
+  limits:
+    cpu: "1000m"
+    memory: "6Gi"
+esJavaOpts: "-Xmx2g -Xms2g"
+volumeClaimTemplate:
+  accessModes: [ "ReadWriteOnce" ]
+  storageClassName: "nfs-client"
+  resources:
+    requests:
+      storage: 20Gi
